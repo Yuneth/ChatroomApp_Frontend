@@ -3,6 +3,7 @@ import { over } from "stompjs";
 import SockJS from "sockjs-client";
 
 var stompClient = null;
+
 const ChatRoom = () => {
   const [privateChats, setPrivateChats] = useState(new Map());
   const [publicChats, setPublicChats] = useState([]);
@@ -13,6 +14,7 @@ const ChatRoom = () => {
     connected: false,
     message: "",
   });
+
   useEffect(() => {
     console.log(userData);
   }, [userData]);
@@ -51,14 +53,14 @@ const ChatRoom = () => {
         }
         break;
       case "MESSAGE":
-        publicChats.push(payloadData);
-        setPublicChats([...publicChats]);
+        setPublicChats((prevChats) => [...prevChats, payloadData]);
+        break;
+      default:
         break;
     }
   };
 
   const onPrivateMessage = (payload) => {
-    console.log(payload);
     var payloadData = JSON.parse(payload.body);
     if (privateChats.get(payloadData.senderName)) {
       privateChats.get(payloadData.senderName).push(payloadData);
@@ -79,21 +81,21 @@ const ChatRoom = () => {
     const { value } = event.target;
     setUserData({ ...userData, message: value });
   };
+
   const sendValue = () => {
-    if (stompClient) {
+    if (stompClient && userData.message.trim()) {
       var chatMessage = {
         senderName: userData.username,
         message: userData.message,
         status: "MESSAGE",
       };
-      console.log(chatMessage);
       stompClient.send("/app/message", {}, JSON.stringify(chatMessage));
       setUserData({ ...userData, message: "" });
     }
   };
 
   const sendPrivateValue = () => {
-    if (stompClient) {
+    if (stompClient && userData.message.trim()) {
       var chatMessage = {
         senderName: userData.username,
         receiverName: tab,
@@ -102,9 +104,15 @@ const ChatRoom = () => {
       };
 
       if (userData.username !== tab) {
-        privateChats.get(tab).push(chatMessage);
-        setPrivateChats(new Map(privateChats));
+        const newPrivateChats = new Map(privateChats);
+        if (newPrivateChats.get(tab)) {
+          newPrivateChats.get(tab).push(chatMessage);
+        } else {
+          newPrivateChats.set(tab, [chatMessage]);
+        }
+        setPrivateChats(newPrivateChats);
       }
+
       stompClient.send("/app/private-message", {}, JSON.stringify(chatMessage));
       setUserData({ ...userData, message: "" });
     }
@@ -118,6 +126,15 @@ const ChatRoom = () => {
   const registerUser = () => {
     connect();
   };
+
+  useEffect(() => {
+    return () => {
+      if (stompClient) {
+        stompClient.disconnect();
+      }
+    };
+  }, []);
+
   return (
     <div className="container">
       {userData.connected ? (
@@ -170,7 +187,7 @@ const ChatRoom = () => {
                 <input
                   type="text"
                   className="input-message"
-                  placeholder="enter the message"
+                  placeholder="Enter your message"
                   value={userData.message}
                   onChange={handleMessage}
                   onKeyDown={(e) => {
@@ -184,7 +201,7 @@ const ChatRoom = () => {
                   className="send-button"
                   onClick={sendValue}
                 >
-                  send
+                  Send
                 </button>
               </div>
             </div>
@@ -192,7 +209,7 @@ const ChatRoom = () => {
           {tab !== "CHATROOM" && (
             <div className="chat-content">
               <ul className="chat-messages">
-                {[...privateChats.get(tab)].map((chat, index) => (
+                {[...(privateChats.get(tab) || [])].map((chat, index) => (
                   <li
                     className={`message ${
                       chat.senderName === userData.username && "self"
@@ -214,12 +231,12 @@ const ChatRoom = () => {
                 <input
                   type="text"
                   className="input-message"
-                  placeholder="enter the message"
+                  placeholder="Enter your message"
                   value={userData.message}
                   onChange={handleMessage}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      sendValue();
+                      sendPrivateValue();
                     }
                   }}
                 />
@@ -228,7 +245,7 @@ const ChatRoom = () => {
                   className="send-button"
                   onClick={sendPrivateValue}
                 >
-                  send
+                  Send
                 </button>
               </div>
             </div>
@@ -247,10 +264,9 @@ const ChatRoom = () => {
                 registerUser();
               }
             }}
-            margin="normal"
           />
           <button type="button" onClick={registerUser}>
-            connect
+            Connect
           </button>
         </div>
       )}
