@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { over } from "stompjs";
 import SockJS from "sockjs-client";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 var stompClient = null;
 
@@ -54,6 +56,8 @@ const ChatRoom = () => {
         break;
       case "MESSAGE":
         setPublicChats((prevChats) => [...prevChats, payloadData]);
+        // Show a toast notification for public message
+        toast.info(`New message from ${payloadData.senderName}: ${payloadData.message}`);
         break;
       default:
         break;
@@ -71,6 +75,9 @@ const ChatRoom = () => {
       privateChats.set(payloadData.senderName, list);
       setPrivateChats(new Map(privateChats));
     }
+
+    // Show a toast notification for private message
+    toast.success(`New private message from ${payloadData.senderName}: ${payloadData.message}`);
   };
 
   const onError = (err) => {
@@ -137,6 +144,9 @@ const ChatRoom = () => {
 
   return (
     <div className="container">
+      {/* Toast Notifications */}
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar newestOnTop />
+
       {userData.connected ? (
         <div className="chat-box">
           <div className="member-list">
