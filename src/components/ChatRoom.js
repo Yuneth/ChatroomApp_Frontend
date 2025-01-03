@@ -57,7 +57,9 @@ const ChatRoom = () => {
       case "MESSAGE":
         setPublicChats((prevChats) => [...prevChats, payloadData]);
         // Show a toast notification for public message
-        toast.info(`New message from ${payloadData.senderName}: ${payloadData.message}`);
+        toast.info(
+          `New message from ${payloadData.senderName}: ${payloadData.message}`
+        );
         break;
       default:
         break;
@@ -77,7 +79,9 @@ const ChatRoom = () => {
     }
 
     // Show a toast notification for private message
-    toast.success(`New private message from ${payloadData.senderName}: ${payloadData.message}`);
+    toast.success(
+      `New private message from ${payloadData.senderName}: ${payloadData.message}`
+    );
   };
 
   const onError = (err) => {
@@ -90,7 +94,11 @@ const ChatRoom = () => {
   };
 
   const sendValue = () => {
-    if (stompClient && userData.message.trim()) {
+    if (!userData.message.trim()) {
+      toast.error("Message cannot be empty!"); // Error notification for public chat
+      return;
+    }
+    if (stompClient) {
       var chatMessage = {
         senderName: userData.username,
         message: userData.message,
@@ -102,7 +110,11 @@ const ChatRoom = () => {
   };
 
   const sendPrivateValue = () => {
-    if (stompClient && userData.message.trim()) {
+    if (!userData.message.trim()) {
+      toast.error("Message cannot be empty!"); // Error notification for private chat
+      return;
+    }
+    if (stompClient) {
       var chatMessage = {
         senderName: userData.username,
         receiverName: tab,
@@ -131,6 +143,10 @@ const ChatRoom = () => {
   };
 
   const registerUser = () => {
+    if (!userData.username.trim()) {
+      toast.error("Username cannot be empty! Please enter your name.");
+      return;
+    }
     connect();
   };
 
@@ -145,7 +161,12 @@ const ChatRoom = () => {
   return (
     <div className="container">
       {/* Toast Notifications */}
-      <ToastContainer position="top-right" autoClose={5000} hideProgressBar newestOnTop />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar
+        newestOnTop
+      />
 
       {userData.connected ? (
         <div className="chat-box">
